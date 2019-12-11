@@ -16,6 +16,7 @@ namespace torch {
 namespace detail {
 /// Detects if a type T has a forward() method.
 template <typename T>
+// yf225 TODO: we should rename `has_forward` to something like `has_only_one_forward_method_with_no_optional_args_and_no_template`
 struct has_forward {
   // Declare two types with differing size.
   using yes = int8_t;

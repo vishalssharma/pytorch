@@ -436,3 +436,31 @@ TEST_F(SequentialTest, PrettyPrintSequential) {
       "  (lstm): torch::nn::LSTM(input_size=4, hidden_size=5, layers=1, dropout=0)\n"
       ")");
 }
+
+TEST_F(SequentialTest, ModuleForwardMethodOptionalArg) {
+  {
+    Sequential sequential(ConvTranspose1d(ConvTranspose1dOptions(3, 2, 3).stride(1).bias(false)));
+    auto x = torch::arange(30.).reshape({2, 3, 5});
+    auto y = sequential->forward(x);
+    // yf225 TODO: does this give the right result?
+  }
+  {
+    Sequential sequential(ConvTranspose2d(ConvTranspose2dOptions(3, 2, 3).stride(1).bias(false)));
+    auto x = torch::arange(75.).view({1, 3, 5, 5});
+    auto y = sequential->forward(x);
+    // yf225 TODO: does this give the right result?
+  }
+  {
+    Sequential sequential(ConvTranspose3d(ConvTranspose3dOptions(2, 2, 2).stride(1).bias(false)));
+    auto x = torch::arange(16.).reshape({1, 2, 2, 2, 2});
+    auto y = sequential->forward(x);
+    // yf225 TODO: does this give the right result?
+  }
+  {
+    auto weight = torch::tensor({{1., 2.3, 3.}, {4., 5.1, 6.3}});
+    Sequential sequential(EmbeddingBag::from_pretrained(weight));
+    auto x = torch::zeros({{1, 2}}, torch::kLong);
+    auto y = sequential->forward(x);
+    // yf225 TODO: does this give the right result?
+  }
+}

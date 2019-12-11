@@ -190,6 +190,10 @@ class SequentialImpl : public Cloneable<SequentialImpl> {
         c10::demangle(typeid(ReturnType).name()));
   }
 
+  Tensor _dummy_forward() {
+    TORCH_CHECK(false, "_dummy_forward is internal API and should not be called");
+  }
+
   /// Adds a new (boxed) `Module` to the `Sequential` container.
   template <typename ModuleType>
   void push_back(std::shared_ptr<ModuleType> module_ptr) {

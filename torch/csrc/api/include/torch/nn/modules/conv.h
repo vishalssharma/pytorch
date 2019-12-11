@@ -3,6 +3,7 @@
 #include <torch/expanding_array.h>
 #include <torch/nn/cloneable.h>
 #include <torch/nn/init.h>
+#include <torch/nn/modules/container/any.h>
 #include <torch/nn/options/conv.h>
 #include <torch/nn/pimpl.h>
 #include <torch/types.h>
@@ -235,6 +236,18 @@ class TORCH_API ConvTranspose1dImpl : public ConvTransposeImpl<1, ConvTranspose1
   explicit ConvTranspose1dImpl(ConvTransposeOptions<1> options_);
   Tensor forward(const Tensor& input,
                  const c10::optional<at::IntArrayRef>& output_size = c10::nullopt);
+  Tensor _dummy_forward() {
+    TORCH_CHECK(false, "_dummy_forward is internal API and should not be called");
+  }
+  // yf225 TODO: ask Sebastian: better way to get number of required arguments of a function?
+  unsigned int _num_required_arguments() override {
+    return 1;
+  }
+  std::vector<AnyValue> _populate_optional_arguments(std::vector<AnyValue>&& arguments) override {
+    // yf225 TODO: assert: arguments.size() >= module->_num_required_arguments() && arguments.size() < sizeof...(ArgumentTypes)
+    arguments.push_back(AnyValue(c10::optional<at::IntArrayRef>()));
+    return std::move(arguments);
+  }
 };
 
 TORCH_MODULE(ConvTranspose1d);
@@ -255,6 +268,17 @@ class TORCH_API ConvTranspose2dImpl : public ConvTransposeImpl<2, ConvTranspose2
   explicit ConvTranspose2dImpl(ConvTransposeOptions<2> options_);
   Tensor forward(const Tensor& input,
                  const c10::optional<at::IntArrayRef>& output_size = c10::nullopt);
+  Tensor _dummy_forward() {
+    TORCH_CHECK(false, "_dummy_forward is internal API and should not be called");
+  }
+  unsigned int _num_required_arguments() override {
+    return 1;
+  }
+  std::vector<AnyValue> _populate_optional_arguments(std::vector<AnyValue>&& arguments) override {
+    // yf225 TODO: assert: arguments.size() >= module->_num_required_arguments() && arguments.size() < sizeof...(ArgumentTypes)
+    arguments.push_back(AnyValue(c10::optional<at::IntArrayRef>()));
+    return std::move(arguments);
+  }
 };
 
 TORCH_MODULE(ConvTranspose2d);
@@ -275,6 +299,17 @@ class TORCH_API ConvTranspose3dImpl : public ConvTransposeImpl<3, ConvTranspose3
   explicit ConvTranspose3dImpl(ConvTransposeOptions<3> options_);
   Tensor forward(const Tensor& input,
                  const c10::optional<at::IntArrayRef>& output_size = c10::nullopt);
+  Tensor _dummy_forward() {
+    TORCH_CHECK(false, "_dummy_forward is internal API and should not be called");
+  }
+  unsigned int _num_required_arguments() override {
+    return 1;
+  }
+  std::vector<AnyValue> _populate_optional_arguments(std::vector<AnyValue>&& arguments) override {
+    // yf225 TODO: assert: arguments.size() >= module->_num_required_arguments() && arguments.size() < sizeof...(ArgumentTypes)
+    arguments.push_back(AnyValue(c10::optional<at::IntArrayRef>()));
+    return std::move(arguments);
+  }
 };
 
 TORCH_MODULE(ConvTranspose3d);

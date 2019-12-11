@@ -70,7 +70,9 @@ struct D : torch::nn::Module {
   }
 };
 
-struct E : torch::nn::Module {};
+struct E : torch::nn::Module {
+  void _dummy_forward() {}
+};
 
 // Put in a function because macros don't handle the comma between arguments to
 // is_same well ...

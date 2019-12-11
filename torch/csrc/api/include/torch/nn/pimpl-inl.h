@@ -60,7 +60,7 @@ struct return_type_of_forward_impl<true, C, Args...> {
 
 template <typename C, typename... Args>
 struct return_type_of_forward_impl<false, C, Args...> {
-  using type = void;
+  using type = decltype(::std::declval<C>()._dummy_forward());
 };
 
 template <typename C, typename... Args>
