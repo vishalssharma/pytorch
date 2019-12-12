@@ -3171,11 +3171,22 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
         process_group.allreduce(torch.rand(10).cuda(self.rank))
         if self.rank == 0:
             work = process_group.allreduce(torch.rand(10).cuda(self.rank))
-            with self.assertRaises(RuntimeError):
+            try:
                 # Operation would time out in blocking mode.
                 work.wait()
+            except Exception as e:
+                self.assertEqual("Operation timed out!", str(e))
+                # Run some GPU operations to make sure cuda does not stuck to
+                # run new events. It was observed cuda could stuck if not
+                # aborting nccl communicators before throwing Operation timed
+                # out
+                a = torch.rand(10).cuda(self.rank)
         else:
             func()
+
+        # Wait for nccl watch dog to clean up nccl communicators in the cache
+        # on rank 0
+        time.sleep(1.0)
 
     @requires_nccl()
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
