@@ -1433,8 +1433,8 @@ struct CAFFE2_API ClassType : public NamedType {
 
   const std::vector<Function*>& methods() const;
 
-  TypePtr getAttribute(const std::string& name) const {
-    AT_ASSERT(attributeNames_.size() == attributeTypes_.size());
+  TypePtr findAttribute(const std::string& name) const {
+    TORCH_INTERNAL_ASSERT(attributeNames_.size() == attributeTypes_.size());
     size_t pos = 0;
     for (const auto& attr : attributeNames_) {
       if (name == attr) {
@@ -1445,6 +1445,27 @@ struct CAFFE2_API ClassType : public NamedType {
 
     if (pos >= attributeNames_.size()) {
       return nullptr;
+    }
+    return attributeTypes_[pos];
+  }
+
+  TypePtr getAttribute(const std::string& name) const {
+    TORCH_INTERNAL_ASSERT(attributeNames_.size() == attributeTypes_.size());
+    size_t pos = 0;
+    for (const auto& attr : attributeNames_) {
+      if (name == attr) {
+        break;
+      }
+      ++pos;
+    }
+
+    if (pos >= attributeNames_.size()) {
+      TORCH_CHECK(
+          false,
+          python_str(),
+          " does not have attribute field with the name '",
+          name,
+          "'");
     }
     return attributeTypes_[pos];
   }
@@ -1489,7 +1510,7 @@ struct CAFFE2_API ClassType : public NamedType {
     TORCH_CHECK(
         false,
         python_str(),
-        " does not have a field with the name '",
+        " does not have attribute field with the name '",
         name,
         "'");
   }
