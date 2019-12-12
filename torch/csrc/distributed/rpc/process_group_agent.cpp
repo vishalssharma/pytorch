@@ -30,6 +30,10 @@ std::vector<int64_t> ProcessGroupAgent::MessageCounter::snapshot() {
 
 const std::chrono::milliseconds INFINITE_TIMEOUT =
     std::chrono::milliseconds::max();
+const std::string kNumPendingRequests = "num_pending_requests";
+const std::string kThreadPoolSize = "thread_pool_size";
+const std::string kNumIdleThreads = "num_idle_threads";
+const std::string kGilAverageWaitTime = "gil_average_wait_time_us";
 
 void ProcessGroupAgent::collectNames() {
   const std::string& workerName = workerInfo_.name_;
@@ -568,17 +572,28 @@ std::unordered_map<std::string, std::string> ProcessGroupAgent::getMetrics() {
   std::unordered_map<std::string, std::string> metrics;
   {
     std::unique_lock<std::mutex> lock(futureMutex_);
-    metrics["num_pending_requests"] = c10::to_string(futures_.size());
+    metrics[kNumPendingRequests] = c10::to_string(futures_.size());
   }
-  metrics["thread_pool_size"] = c10::to_string(threadPool_.size());
-  metrics["num_idle_threads"] = c10::to_string(threadPool_.numAvailable());
+  metrics[kThreadPoolSize] = c10::to_string(threadPool_.size());
+  metrics[kNumIdleThreads] = c10::to_string(threadPool_.numAvailable());
+  for (const auto& metricInfo : metricsMap_) {
+    metrics[metricInfo.first] =
+        c10::to_string(metricInfo.second->currentAverage_);
+  }
   return metrics;
 }
 
-std::unordered_map<std::string, std::string> ProcessGroupAgent::getDebugInfo() {
-  /* This would later include more info other than metrics for eg: may include
-     stack traces for the threads owned by the agent */
-  return getMetrics();
+void ProcessGroupAgent::addGilWaitTime(
+    const std::chrono::microseconds gilWaitTime) {
+  auto gilMetrics = metricsMap_.find(kGilAverageWaitTime);
+  if (gilMetrics == metricsMap_.end()) {
+    metricsMap_.insert({kGilAverageWaitTime,
+                        std::move(c10::guts::make_unique<AverageMetricsTracker>(
+                            kGilAverageWaitTime))});
+  } else {
+    auto& metricsPtr = gilMetrics->second;
+    metricsPtr->computeAverage(gilWaitTime.count());
+  }
 }
 
 } // namespace rpc

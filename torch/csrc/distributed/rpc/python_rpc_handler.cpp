@@ -1,4 +1,5 @@
 #include <torch/csrc/distributed/rpc/python_rpc_handler.h>
+#include <torch/csrc/distributed/rpc/rpc_agent.h>
 
 namespace torch {
 namespace distributed {
@@ -18,8 +19,19 @@ py::object getFunction(const py::object& module, const char* name) {
 
 } // namespace
 
+PythonRpcHandler::GilWaitTimeGuard::GilWaitTimeGuard()
+    : start(std::chrono::high_resolution_clock::now()) {}
+
+void PythonRpcHandler::GilWaitTimeGuard::markAcquired() {
+  auto dur = std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::high_resolution_clock::now() - start);
+  RpcAgent::getDefaultRpcAgent()->addGilWaitTime(dur);
+}
+
 PythonRpcHandler::PythonRpcHandler() {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   py::object module = py::module::import("torch.distributed.rpc.internal");
   pyRunFunction_ = getFunction(module, "_run_function");
   pyLoadReturnValue_ = getFunction(module, "_load_return_value");
@@ -28,7 +40,9 @@ PythonRpcHandler::PythonRpcHandler() {
 }
 
 void PythonRpcHandler::cleanup() {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   pyRunFunction_ = py::none();
   pyLoadReturnValue_ = py::none();
   pySerialize_ = py::none();
@@ -44,7 +58,9 @@ std::vector<char> PythonRpcHandler::generatePythonUDFResult(
     const std::vector<char>& pickledPayload,
     const std::vector<torch::Tensor>& requestTensorTable,
     std::vector<torch::Tensor>& responseTensorTable) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   auto pargs = py::bytes(pickledPayload.data(), pickledPayload.size());
   py::tuple pres = pySerialize_(pyRunFunction_(pargs, requestTensorTable));
   const auto& presStr = pres[0].cast<std::string>();
@@ -56,33 +72,43 @@ std::vector<char> PythonRpcHandler::generatePythonUDFResult(
 py::object PythonRpcHandler::loadPythonUDFResult(
     const std::vector<char>& pickledPayload,
     const std::vector<torch::Tensor>& tensorTable) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   auto pargs = py::bytes(pickledPayload.data(), pickledPayload.size());
   return pyLoadReturnValue_(pargs, tensorTable);
 }
 
 py::object PythonRpcHandler::runPythonUDF(
     const SerializedPyObj& serializedObj) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   return pyRunFunction_(
       py::bytes(serializedObj.payload_), serializedObj.tensors_);
 }
 
 SerializedPyObj PythonRpcHandler::serialize(const py::object& obj) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   py::tuple t = pySerialize_(obj);
   return SerializedPyObj(
       t[0].cast<std::string>(), t[1].cast<std::vector<torch::Tensor>>());
 }
 
 py::object PythonRpcHandler::deserialize(const SerializedPyObj& serializedObj) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   return pyLoadReturnValue_(
       py::bytes(serializedObj.payload_), serializedObj.tensors_);
 }
 
 void PythonRpcHandler::handleException(const py::object& obj) {
+  GilWaitTimeGuard g;
   pybind11::gil_scoped_acquire ag;
+  g.markAcquired();
   pyHandleException_(obj);
 }
 
