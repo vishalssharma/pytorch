@@ -142,7 +142,6 @@ IValue UserRRef<IValue>::toHere() {
       true /* forceGradRecording */);
 
   const Message& message = futureResponse->wait();
-  RRefContext::handleException(message);
   auto response = deserializeResponse(message);
   auto& rfr = unwrapAutogradMessage<ScriptRRefFetchRet>(message, response);
   return rfr.values().front();
@@ -162,7 +161,6 @@ py::object UserRRef<py::object>::toHere() {
       true /* forceGradRecording */);
 
   const Message& message = futureResponse->wait();
-  RRefContext::handleException(message);
   auto response = deserializeResponse(message);
   auto& rfr = unwrapAutogradMessage<PythonRRefFetchRet>(message, response);
   return PythonRpcHandler::getInstance().deserialize(
